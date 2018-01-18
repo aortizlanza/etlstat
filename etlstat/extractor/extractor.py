@@ -1,4 +1,5 @@
 import csv
+import glob
 import fnmatch
 import os
 import xml.etree.ElementTree as ET
@@ -68,6 +69,7 @@ def excel_processing(dir_path, excel):
         xls_map[sheet_names[sheet_pointer]]['skip_rows'] = list_a[0]
         xls_map[sheet_names[sheet_pointer]]['footer_rows'] = footer
         sheet_pointer += 1
+
     return xls_map
 
 
@@ -158,7 +160,7 @@ def pc_axis_in(file_path, sep=",", encoding='windows-1252'):
     return pc_axis_dict
 
 
-def positional_in(dir_path, pattern_csv='*.[cC][sS][vV]', pattern_txt="*.[tT][xX][tT]", sep=';', encoding='utf-8'):
+def positional_in(dir_path, reg_ex='*', sep=';', encoding='utf-8'):
     """
     Function that reads files in a directory filtered by regEx, generates a correspondence
     between data files and format files and returning a dict. (MICRODATA)
@@ -181,16 +183,11 @@ def positional_in(dir_path, pattern_csv='*.[cC][sS][vV]', pattern_txt="*.[tT][xX
     longitud = 'Longitud'
     asignation_map = {}
     aux = None
-    csv_s = []
-    txt_s = []
     os.chdir(dir_path)
-    for file in os.listdir('.'):
-        if fnmatch.fnmatch(file, pattern_csv):
-            csv_s.append(file)
-        if fnmatch.fnmatch(file, pattern_txt):
-            txt_s.append(file)
+    csv_s = [f for f in glob.glob(reg_ex) if ".csv" in f or ".CSV" in f]
     csv_list = set(csv_s)
     csv_list = list(csv_list)
+    txt_s = [f for f in glob.glob(reg_ex) if ".txt" in f or ".TXT" in f]
     keys = set(txt_s)
     keys = list(keys)
     correspondence_map = dict.fromkeys(keys,dict())
@@ -225,7 +222,7 @@ def positional_in(dir_path, pattern_csv='*.[cC][sS][vV]', pattern_txt="*.[tT][xX
     return asignation_map
 
 
-def xml_in(dir_path, pattern='*.[xXkK][mMjJtT][lLrRbB]'):
+def xml_in(dir_path, reg_ex='*'):
 
     # TODO: refactorizar con pattern y fnmatch
     """
@@ -239,11 +236,9 @@ def xml_in(dir_path, pattern='*.[xXkK][mMjJtT][lLrRbB]'):
     Returns:
         dict: XML name as KEY and etree object as VALUE
     """
-    xmls = []
     os.chdir(dir_path)
-    for file in os.listdir('.'):
-        if fnmatch.fnmatch(file, pattern):
-            xmls.append(file)
+    xmls = [f for f in glob.glob(reg_ex) if ".xml" in f or ".XML" in f or ".ktr" in f or ".kjb" in f or ".KTR" in f
+            or ".KJB" in f]
     keys = set(xmls)
     keys = list(keys)
     df_dict = dict.fromkeys(keys,'')
@@ -263,12 +258,10 @@ def sql_in(dir_path):
         dict: query name  as KEY and query as VALUE
     """
     files = {}
-    os.chdir(dir_path)
     with ExitStack() as cm:
-        for filename in os.listdir('.'):
-            if fnmatch.fnmatch(filename, '*.sql'):
-                f = cm.enter_context(open(filename, 'r'))
-                files[filename.split(dir_path, 1)[-1][:-4]] = f.read()
+        for filename in glob.glob(dir_path + '*.sql'):
+            f = cm.enter_context(open(filename, 'r'))
+            files[filename.split(dir_path, 1)[-1][:-4]] = f.read()
         cm.pop_all().close()
 
     return files
